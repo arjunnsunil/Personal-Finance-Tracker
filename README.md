@@ -40,19 +40,19 @@ Personal-Finance-Tracker-LLAMA/
 ## 🚀 Getting Started
 
 ### 1. Clone the repository
-
+```bash
 git clone https://github.com/YOUR_USERNAME/Personal-Finance-Tracker-LLAMA.git
 cd Personal-Finance-Tracker-LLAMA
-
+```
 ### 2. Setup a virtual environment
-
+```bash
 python -m venv llama_env
 source llama_env/bin/activate      # For Linux/macOS
 llama_env\Scripts\activate         # For Windows
-
+```
 ### 3. Install required dependencies
-
+```bash
 pip install -r requirements.txt
-
+```
 ### 4. Add your LLM model
 
