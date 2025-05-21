@@ -73,6 +73,39 @@ if uploaded_file is not None:
     ax.set_title("Monthly Income vs Expenses")
     st.pyplot(fig)
     
+    # Expense by Category Pie Chart
+    st.markdown("### 🥧 Expense Distribution by Category")
+    category_summary = df[df['Type'] == 'Expense'].groupby('Category')['Amount'].sum()
+    fig2, ax2 = plt.subplots()
+    ax2.pie(category_summary, labels=category_summary.index, autopct='%1.1f%%', startangle=140)
+    ax2.axis('equal')
+    st.pyplot(fig2)
+
+    st.markdown("## 🔝 Top Expense Sources (Brand-Level)")
+
+    # --- All-Time Top Sources ---
+    top_expense_sources_total = df[df["Type"] == "Expense"].groupby("Description")["Amount"].sum().sort_values(ascending=False).head(10)
+
+    # --- Monthly Top Sources ---
+    available_months = sorted(df["Month"].unique())
+    selected_month = st.selectbox("📅 Select Month", available_months, key="top_sources_month")
+    monthly_df = df[(df["Type"] == "Expense") & (df["Month"] == selected_month)]
+    top_expense_sources_month = monthly_df.groupby("Description")["Amount"].sum().sort_values(ascending=False).head(10)
+
+    # --- Display Charts Side by Side ---
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.markdown("### 🧾 Total (All Time)")
+        st.bar_chart(top_expense_sources_total)
+
+    with col2:
+        st.markdown(f"### 📅 {selected_month}")
+        if not top_expense_sources_month.empty:
+            st.bar_chart(top_expense_sources_month)
+        else:
+            st.info("No expense data for this month.")
+
     #Create Budget Inputs
     st.markdown("### 💸 Set Your Monthly Budgets")
 
@@ -84,21 +117,7 @@ if uploaded_file is not None:
 
     for category in expense_categories:
         budget = st.number_input(f"Set budget for {category} (₹)", min_value=0, value=5000, step=500, key=f"budget_{category}")
-        user_budgets[category] = budget
-
-    # Expense by Category Pie Chart
-    st.markdown("### 🥧 Expense Distribution by Category")
-    category_summary = df[df['Type'] == 'Expense'].groupby('Category')['Amount'].sum()
-    fig2, ax2 = plt.subplots()
-    ax2.pie(category_summary, labels=category_summary.index, autopct='%1.1f%%', startangle=140)
-    ax2.axis('equal')
-    st.pyplot(fig2)
-
-    top_expense_sources = df[df["Type"] == "Expense"].groupby("Description")["Amount"].sum().sort_values(ascending=False).head(10)
-
-    st.markdown("### 🔝 Top Expense Sources (Brands / Vendors)")
-    st.bar_chart(top_expense_sources)
-
+        user_budgets[category] = budget            
 
     # Calculate Category Spend vs Budget
     st.markdown("### 🚨 Overspending Alerts")
