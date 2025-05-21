@@ -94,6 +94,12 @@ if uploaded_file is not None:
     ax2.axis('equal')
     st.pyplot(fig2)
 
+    top_expense_sources = df[df["Type"] == "Expense"].groupby("Description")["Amount"].sum().sort_values(ascending=False).head(10)
+
+    st.markdown("### 🔝 Top Expense Sources (Brands / Vendors)")
+    st.bar_chart(top_expense_sources)
+
+
     # Calculate Category Spend vs Budget
     st.markdown("### 🚨 Overspending Alerts")
 
@@ -195,7 +201,10 @@ if uploaded_file is not None:
         "health": ["health", "medical", "doctor", "hospital", "medicine", "pharmacy", "clinic"],
         "shopping": ["shopping", "clothes", "apparel", "fashion", "online shopping", "amazon", "flipkart"],
         "rent": ["rent", "housing", "apartment", "flat", "room", "lease"],
-        "others": ["others", "miscellaneous", "other", "etc"]
+        "others": ["others", "miscellaneous", "other", "etc"],
+        "netflix": ["netflix", "subscription", "ott"],
+        "swiggy": ["swiggy", "food", "delivery"],
+        "amazon": ["amazon", "shopping", "online"],
     }
 
     def extract_keywords_and_month(question):
@@ -232,8 +241,7 @@ if uploaded_file is not None:
             with st.spinner("Thinking..."):
                 try:
                     keyword, month = extract_keywords_and_month(user_question)
-                    st.write("🔍 Detected keyword:", keyword, "| Month:", month)
-
+                    
                     if keyword:
                         filtered_df = df[
                             (df["Type"] == "Expense") &
