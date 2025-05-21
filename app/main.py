@@ -198,25 +198,31 @@ if uploaded_file is not None:
         "others": ["others", "miscellaneous", "other", "etc"]
     }
 
-    def extract_category_and_month(question):
+    def extract_keywords_and_month(question):
         question = question.lower()
-        category = None
+        keyword = None
         month = None
 
-        for true_cat, synonyms in category_synonyms.items():
-            for word in synonyms:
-                if word in question:
-                    category = true_cat
-                    break
-            if category:
-                break
-
+        # Try to extract month
         for key, val in month_map.items():
             if key in question:
                 month = val
                 break
 
-        return category, month
+            # Try to extract specific keywords from question
+            for word in df["Description"].str.lower().unique():
+                if word in question:
+                    keyword = word
+                    break
+            # Partial match
+            for token in word.split():
+                if token in question:
+                    keyword = token
+                    break
+            if keyword:
+                break
+
+        return keyword, month
 
 
     if st.button("Get Advice"):
@@ -225,36 +231,45 @@ if uploaded_file is not None:
         else:
             with st.spinner("Thinking..."):
                 try:
-                    category, month = extract_category_and_month(user_question)
-                    st.write("🔍 Detected:", category, month)
-                    if category and month:
-                        filtered_amount = df[
-                            (df["Type"] == "Expense") &
-                            (df["Category"].str.lower() == category) &
-                            (df["Date"].dt.to_period("M").astype(str) == month)
-                        ]["Amount"].sum()
+                    keyword, month = extract_keywords_and_month(user_question)
+                    st.write("🔍 Detected keyword:", keyword, "| Month:", month)
 
-                        st.success(f"✅ You spent ₹{filtered_amount:,.0f} on {category.capitalize()} in {month}.")
+                    if keyword:
+                        filtered_df = df[
+                            (df["Type"] == "Expense") &
+                            (df["Description"].str.lower().str.contains(keyword))
+                        ]
+                        if month:
+                            filtered_df = filtered_df[
+                                df["Date"].dt.to_period("M").astype(str) == month
+                            ]
+                        total_spent = filtered_df["Amount"].sum()
+                        if total_spent > 0:
+                            st.success(f"✅ You spent ₹{total_spent:,.0f} on items related to '{keyword}'" + (f" in {month}" if month else "") + ".")
+                        else:
+                            st.info("No matching expenses found.")
                     else:
                         # Fallback to LLM
                         custom_prompt = f"""
+
                         You are a helpful and precise AI financial assistant.
 
                         The user may ask a question related to budgeting, savings, expenses, investments, or general personal finance.
 
                         Always respond clearly and realistically. If you need more data to answer fully, explain what’s missing.
 
-                        Use Indian Rupees (₹) in all your answers.
+                        The user uploaded transaction data with details like descriptions and categories.
 
-                        User Question: {user_question.strip()}
-                        Answer:
-                        """.strip()
+                        They asked: "{user_question.strip()}"
+
+                        If you're missing details (like brand name or time frame), ask them to clarify. Otherwise, use the uploaded data to help.
+                        Answer in under 100 words using Indian Rupees.
+                        """
 
                         answer = get_response(custom_prompt)
                         st.write(answer)
                 except Exception as e:
                     st.error(f"LLM Error: {e}")
-
 
 else:
     st.info("Please upload a CSV file to begin.")
